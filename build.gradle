@@ -1,0 +1,83 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.0.3'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id "maven-publish"
+    id 'jacoco'
+    id "com.github.spotbugs" version "5.0.14"
+    id "io.freefair.lombok" version "8.0.1"
+    id "checkstyle"
+    id "pmd"
+}
+
+group = 'com.audition'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+apply from: 'config/code-analysis.gradle'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2022.0.1")
+    set('springdocVersion', "2.0.2")
+}
+
+dependencies {
+    // Core REST API and production readiness endpoints.
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+
+    // Externalized configuration support used by application.yml.
+    implementation "org.springframework.cloud:spring-cloud-starter-config"
+
+    // Distributed tracing for trace/span propagation and response headers.
+    implementation "io.micrometer:micrometer-tracing-bridge-brave"
+    implementation "io.micrometer:context-propagation"
+    implementation "io.micrometer:micrometer-registry-prometheus"
+
+    // OpenAPI/Swagger UI for API documentation.
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+    // Used by AuditionLogger for null-safe string handling.
+    implementation "org.apache.commons:commons-lang3"
+
+    developmentOnly "org.springframework.boot:spring-boot-devtools"
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+checkstyle {
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    configProperties = [
+        'org.checkstyle.google.suppressionfilter.config': "${rootProject.projectDir}/config/checkstyle/suppressions.xml"
+    ]
+}
+
+task prepareGitHooks(type: Copy) {
+    from "$projectDir/git-hooks"
+    into "$projectDir/.git/hooks"
+    include "*"
+}
+tasks.matching { it.name != 'prepareGitHooks' }.all { Task task -> task.dependsOn prepareGitHooks }
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+check.dependsOn jacocoTestCoverageVerification
