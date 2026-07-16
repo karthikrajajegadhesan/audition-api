@@ -116,5 +116,3 @@ curl "http://localhost:8080/comments?postId=1"
 ```
 
 Post IDs must be positive integers. Invalid IDs return `400 Bad Request` with a `ProblemDetail` body.
-
-Swagger UI is available at `/swagger-ui.html` when the application is running.
