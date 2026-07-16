@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+/**
+ * Global exception handler that maps application and upstream errors to
+ * ProblemDetail responses with consistent titles and HTTP status codes.
+ */
 @ControllerAdvice
 @Getter
 public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
@@ -35,11 +39,13 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
         this.logger = logger;
     }
 
+    /** Maps upstream HTTP client errors to problem details using the remote status code. */
     @ExceptionHandler(HttpClientErrorException.class)
     ProblemDetail handleHttpClientException(final HttpClientErrorException exception) {
         return createProblemDetail(exception, exception.getStatusCode());
     }
 
+    /** Fallback handler for uncaught exceptions. */
     @ExceptionHandler(Exception.class)
     ProblemDetail handleMainException(final Exception exception) {
         final HttpStatusCode status = getHttpStatusCodeFromException(exception);
@@ -48,6 +54,7 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
         return problemDetail;
     }
 
+    /** Maps application SystemException instances to problem details. */
     @ExceptionHandler(SystemException.class)
     ProblemDetail handleSystemException(final SystemException exception) {
         final HttpStatusCode status = getHttpStatusCodeFromSystemException(exception);

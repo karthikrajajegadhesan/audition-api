@@ -16,6 +16,10 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * HTTP client for JSONPlaceholder. Translates RestClientException failures into
+ * SystemException instances with appropriate status codes for the API layer.
+ */
 @Component
 @Getter
 public class AuditionIntegrationClient {
@@ -32,6 +36,7 @@ public class AuditionIntegrationClient {
         this.restTemplate = restTemplate;
     }
 
+    /** Fetches all posts from the downstream service. */
     public List<AuditionPost> getPosts() {
         try {
             final AuditionPost[] posts = restTemplate.getForObject(POSTS_URL, AuditionPost[].class);
@@ -41,6 +46,7 @@ public class AuditionIntegrationClient {
         }
     }
 
+    /** Fetches a single post by post id. */
     public AuditionPost getPostById(final String id) {
         try {
             return restTemplate.getForObject(POST_BY_ID_URL, AuditionPost.class, id);
@@ -49,6 +55,7 @@ public class AuditionIntegrationClient {
         }
     }
 
+    /** Fetches a post and enriches it with comments from a second upstream call. */
     public AuditionPost getPostWithComments(final String postId) {
         final AuditionPost post = getPostById(postId);
         try {
@@ -61,6 +68,7 @@ public class AuditionIntegrationClient {
         }
     }
 
+    /** Fetches comments for a post using the upstream postId query parameter. */
     public List<AuditionComment> getCommentsByPostId(final String postId) {
         try {
             final AuditionComment[] comments = restTemplate.getForObject(
@@ -71,6 +79,10 @@ public class AuditionIntegrationClient {
         }
     }
 
+    /**
+     * Converts RestTemplate failures into domain exceptions. A 404 with a resource id is mapped
+     * to a user-friendly "post not found" message.
+     */
     private SystemException handleRestClientException(final String operation,
         final RestClientException exception, final String resourceId) {
         if (exception instanceof HttpClientErrorException clientError) {

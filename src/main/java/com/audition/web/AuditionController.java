@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST endpoints for posts and comments. Delegates to AuditionService and validates
+ * incoming post identifiers before they reach the service layer.
+ */
 @RestController
 @Getter
 public class AuditionController {
@@ -30,6 +34,9 @@ public class AuditionController {
         this.auditionLogger = auditionLogger;
     }
 
+    /**
+     * Returns posts, optionally filtered by userId and title.
+     */
     @GetMapping(value = "/posts", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<AuditionPost> getPosts(
         @RequestParam(value = "userId", required = false) final Integer userId,
@@ -40,6 +47,9 @@ public class AuditionController {
         return posts;
     }
 
+    /**
+     * Returns a single post by post id.
+     */
     @GetMapping(value = "/posts/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public AuditionPost getPostById(@PathVariable("id") final String postId) {
         logInfo(String.format("Received request to fetch post with id=%s", postId));
@@ -49,6 +59,9 @@ public class AuditionController {
         return post;
     }
 
+    /**
+     * Returns a post with its comments embedded in the response.
+     */
     @GetMapping(value = "/posts/{id}/comments", produces = MediaType.APPLICATION_JSON_VALUE)
     public AuditionPost getPostWithComments(@PathVariable("id") final String postId) {
         logInfo(String.format("Received request to fetch post with comments for id=%s", postId));
@@ -58,6 +71,9 @@ public class AuditionController {
         return post;
     }
 
+    /**
+     * Returns comments for a post as a list.
+     */
     @GetMapping(value = "/comments", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<AuditionComment> getCommentsByPostId(
         @RequestParam("postId") final String postId) {
@@ -68,6 +84,7 @@ public class AuditionController {
         return comments;
     }
 
+    /** Rejects null, non-numeric, or non-positive post ids with a 400 response. */
     private void validatePostId(final String postId) {
         if (postId == null || !postId.matches("\\d+") || Integer.parseInt(postId) <= 0) {
             if (LOG.isWarnEnabled()) {
