@@ -10,9 +10,9 @@ import com.audition.common.exception.SystemException;
 import com.audition.model.AuditionComment;
 import com.audition.model.AuditionPost;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -33,8 +33,13 @@ class AuditionIntegrationClientTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @InjectMocks
     private AuditionIntegrationClient auditionIntegrationClient;
+
+    @BeforeEach
+    void setUp() {
+        auditionIntegrationClient = new AuditionIntegrationClient(restTemplate, POSTS_URL,
+            POST_BY_ID_URL, POST_COMMENTS_URL, COMMENTS_BY_POST_ID_URL);
+    }
 
     @Test
     void getPosts_returnsPostsFromRestTemplate() {

@@ -6,6 +6,12 @@ spring:
     exclude:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 application:
+  integration:
+    base-url: https://jsonplaceholder.typicode.com
+    posts-url: ${application.integration.base-url}/posts
+    post-by-id-url: ${application.integration.base-url}/posts/{id}
+    post-comments-url: ${application.integration.base-url}/posts/{postId}/comments
+    comments-by-post-id-url: ${application.integration.base-url}/comments?postId={postId}
   connection:
     read-timeout: 5000
     write-timeout: 5000

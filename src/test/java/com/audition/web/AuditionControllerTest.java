@@ -10,36 +10,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.audition.common.exception.SystemException;
 import com.audition.common.logging.AuditionLogger;
+import com.audition.configuration.RestTemplateLoggingInterceptor;
 import com.audition.model.AuditionComment;
 import com.audition.model.AuditionPost;
 import com.audition.service.AuditionService;
-import com.audition.web.advice.ExceptionControllerAdvice;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(AuditionController.class)
 class AuditionControllerTest {
 
-    @Mock
-    private AuditionService auditionService;
-
-    @Mock
-    private AuditionLogger auditionLogger;
-
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AuditionController(auditionService, auditionLogger))
-            .setControllerAdvice(new ExceptionControllerAdvice(auditionLogger))
-            .build();
-    }
+    @MockBean
+    private AuditionService auditionService;
+
+    @MockBean
+    private AuditionLogger auditionLogger;
+
+    @MockBean
+    private RestTemplateLoggingInterceptor restTemplateLoggingInterceptor;
 
     @Test
     void getPosts_returnsAllPostsWhenNoFiltersApplied() throws Exception {

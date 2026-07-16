@@ -1,15 +1,16 @@
 package com.audition.web;
 
-import com.audition.common.exception.SystemException;
 import com.audition.common.logging.AuditionLogger;
 import com.audition.model.AuditionComment;
 import com.audition.model.AuditionPost;
 import com.audition.service.AuditionService;
+import com.audition.web.validation.ValidPostId;
 import java.util.List;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * incoming post identifiers before they reach the service layer.
  */
 @RestController
+@Validated
 @Getter
 public class AuditionController {
 
@@ -42,33 +44,25 @@ public class AuditionController {
         @RequestParam(value = "userId", required = false) final Integer userId,
         @RequestParam(value = "title", required = false) final String title) {
         logInfo(String.format("Received request to fetch posts with userId=%s, title=%s", userId, title));
-        final List<AuditionPost> posts = auditionService.getPosts(userId, title);
-        logInfo(String.format("Returning %d posts", posts.size()));
-        return posts;
+        return auditionService.getPosts(userId, title);
     }
 
     /**
      * Returns a single post by post id.
      */
     @GetMapping(value = "/posts/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public AuditionPost getPostById(@PathVariable("id") final String postId) {
+    public AuditionPost getPostById(@PathVariable("id") @ValidPostId final String postId) {
         logInfo(String.format("Received request to fetch post with id=%s", postId));
-        validatePostId(postId);
-        final AuditionPost post = auditionService.getPostById(postId);
-        logInfo(String.format("Returning post with id=%s", postId));
-        return post;
+        return auditionService.getPostById(postId);
     }
 
     /**
      * Returns a post with its comments embedded in the response.
      */
     @GetMapping(value = "/posts/{id}/comments", produces = MediaType.APPLICATION_JSON_VALUE)
-    public AuditionPost getPostWithComments(@PathVariable("id") final String postId) {
+    public AuditionPost getPostWithComments(@PathVariable("id") @ValidPostId final String postId) {
         logInfo(String.format("Received request to fetch post with comments for id=%s", postId));
-        validatePostId(postId);
-        final AuditionPost post = auditionService.getPostWithComments(postId);
-        logInfo(String.format("Returning post with comments for id=%s", postId));
-        return post;
+        return auditionService.getPostWithComments(postId);
     }
 
     /**
@@ -76,22 +70,9 @@ public class AuditionController {
      */
     @GetMapping(value = "/comments", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<AuditionComment> getCommentsByPostId(
-        @RequestParam("postId") final String postId) {
+        @RequestParam("postId") @ValidPostId final String postId) {
         logInfo(String.format("Received request to fetch comments for post id=%s", postId));
-        validatePostId(postId);
-        final List<AuditionComment> comments = auditionService.getCommentsByPostId(postId);
-        logInfo(String.format("Returning %d comments for post id=%s", comments.size(), postId));
-        return comments;
-    }
-
-    /** Rejects null, non-numeric, or non-positive post ids with a 400 response. */
-    private void validatePostId(final String postId) {
-        if (postId == null || !postId.matches("\\d+") || Integer.parseInt(postId) <= 0) {
-            if (LOG.isWarnEnabled()) {
-                auditionLogger.warn(LOG, String.format("Invalid post id received: %s", postId));
-            }
-            throw new SystemException("Invalid post id: " + postId, "Bad Request", 400);
-        }
+        return auditionService.getCommentsByPostId(postId);
     }
 
     private void logInfo(final String message) {

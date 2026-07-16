@@ -6,9 +6,13 @@ import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
 import com.audition.common.exception.SystemException;
 import com.audition.common.logging.AuditionLogger;
 import io.micrometer.common.util.StringUtils;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import java.util.Set;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -61,6 +65,33 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
         final ProblemDetail problemDetail = createProblemDetail(exception, status);
         logger.logStandardProblemDetail(LOG, problemDetail, exception);
         return problemDetail;
+    }
+
+    /** Maps Bean Validation constraint violations to 400 problem details. */
+    @ExceptionHandler(ConstraintViolationException.class)
+    ProblemDetail handleConstraintViolationException(final ConstraintViolationException exception) {
+        return createValidationProblemDetail(getValidationMessage(exception.getConstraintViolations()),
+            exception);
+    }
+
+    private ProblemDetail createValidationProblemDetail(final String detail,
+        final Exception exception) {
+        if (LOG.isWarnEnabled()) {
+            logger.warn(LOG, detail);
+        }
+        final ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setTitle("Bad Request");
+        problemDetail.setDetail(detail);
+        logger.logStandardProblemDetail(LOG, problemDetail, exception);
+        return problemDetail;
+    }
+
+    private String getValidationMessage(final Set<ConstraintViolation<?>> violations) {
+        return violations.stream()
+            .map(ConstraintViolation::getMessage)
+            .filter(StringUtils::isNotBlank)
+            .findFirst()
+            .orElse("Bad Request");
     }
 
     private ProblemDetail createProblemDetail(final Exception exception,

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -24,22 +25,28 @@ import org.springframework.web.client.RestTemplate;
 @Getter
 public class AuditionIntegrationClient {
 
-    private static final String BASE_URL = "https://jsonplaceholder.typicode.com";
-    private static final String POSTS_URL = BASE_URL + "/posts";
-    private static final String POST_BY_ID_URL = POSTS_URL + "/{id}";
-    private static final String POST_COMMENTS_URL = POSTS_URL + "/{postId}/comments";
-    private static final String COMMENTS_BY_POST_ID_URL = BASE_URL + "/comments?postId={postId}";
-
     private final RestTemplate restTemplate;
+    private final String postsUrl;
+    private final String postByIdUrl;
+    private final String postCommentsUrl;
+    private final String commentsByPostIdUrl;
 
-    public AuditionIntegrationClient(final RestTemplate restTemplate) {
+    public AuditionIntegrationClient(final RestTemplate restTemplate,
+        @Value("${application.integration.posts-url}") final String postsUrl,
+        @Value("${application.integration.post-by-id-url}") final String postByIdUrl,
+        @Value("${application.integration.post-comments-url}") final String postCommentsUrl,
+        @Value("${application.integration.comments-by-post-id-url}") final String commentsByPostIdUrl) {
         this.restTemplate = restTemplate;
+        this.postsUrl = postsUrl;
+        this.postByIdUrl = postByIdUrl;
+        this.postCommentsUrl = postCommentsUrl;
+        this.commentsByPostIdUrl = commentsByPostIdUrl;
     }
 
     /** Fetches all posts from the downstream service. */
     public List<AuditionPost> getPosts() {
         try {
-            final AuditionPost[] posts = restTemplate.getForObject(POSTS_URL, AuditionPost[].class);
+            final AuditionPost[] posts = restTemplate.getForObject(postsUrl, AuditionPost[].class);
             return posts == null ? new ArrayList<>() : Arrays.asList(posts);
         } catch (final RestClientException exception) {
             throw handleRestClientException("getPosts", exception, null);
@@ -49,7 +56,7 @@ public class AuditionIntegrationClient {
     /** Fetches a single post by post id. */
     public AuditionPost getPostById(final String id) {
         try {
-            return restTemplate.getForObject(POST_BY_ID_URL, AuditionPost.class, id);
+            return restTemplate.getForObject(postByIdUrl, AuditionPost.class, id);
         } catch (final RestClientException exception) {
             throw handleRestClientException("getPostById", exception, id);
         }
@@ -60,7 +67,7 @@ public class AuditionIntegrationClient {
         final AuditionPost post = getPostById(postId);
         try {
             final AuditionComment[] comments = restTemplate.getForObject(
-                POST_COMMENTS_URL, AuditionComment[].class, postId);
+                postCommentsUrl, AuditionComment[].class, postId);
             post.setComments(comments == null ? new ArrayList<>() : Arrays.asList(comments));
             return post;
         } catch (final RestClientException exception) {
@@ -72,7 +79,7 @@ public class AuditionIntegrationClient {
     public List<AuditionComment> getCommentsByPostId(final String postId) {
         try {
             final AuditionComment[] comments = restTemplate.getForObject(
-                COMMENTS_BY_POST_ID_URL, AuditionComment[].class, postId);
+                commentsByPostIdUrl, AuditionComment[].class, postId);
             return comments == null ? new ArrayList<>() : Arrays.asList(comments);
         } catch (final RestClientException exception) {
             throw handleRestClientException("getCommentsByPostId", exception, postId);
